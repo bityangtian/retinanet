@@ -8,6 +8,7 @@ class Focal_loss(nn.Module):
         self.lambda1 = 2
         self.sigma =0.25
         self.mse = nn.MSELoss() 
+        self.l1 = nn.L1Loss()
         self.sigmoid = nn.Sigmoid()
     
     def forward(self, target, pred_box, pred_class, anchor):
@@ -25,14 +26,15 @@ class Focal_loss(nn.Module):
         after_sigmoid_noobj = self.sigmoid(pred_class[noobj])
         focal_loss2 = (1-self.sigma)*(-(1-after_sigmoid_noobj)**self.lambda1*target[..., 5:25][noobj]*torch.log(after_sigmoid_noobj)-after_sigmoid_noobj**self.lambda1*(1-target[..., 5:25][noobj])*torch.log(1-after_sigmoid_noobj))
         focal_loss = torch.cat((focal_loss1, focal_loss2), dim=0)
-        focal_loss =torch.mean(focal_loss)
+        focal_loss =torch.mean(focal_loss) * 20 #这里乘20是因为要除以的是正负样本的个数
         
         pred_box[..., 0:2]=self.sigmoid(pred_box[..., 0:2])
         target[..., 3:5] = torch.log(1e-6 + target[..., 3:5]/anchor)
         if pred_box[..., 0:4][obj].shape[0] == 0:
             boxloss=torch.tensor([0]).to("cuda")
         else:
-            boxloss = torch.sum((pred_box[..., 0:4][obj] - target[..., 1:5][obj])**2)/pred_box[..., 0:4][obj].shape[0]
+            boxloss = self.l1(pred_box[..., 0:4][obj], target[..., 1:5][obj]) * 4 #这里乘4是因为要除以的是正样本的个数
+            #boxloss = torch.sum((pred_box[..., 0:4][obj] - target[..., 1:5][obj])**2)/pred_box[..., 0:4][obj].shape[0]
         #print(pred_box[..., 0:4][obj].shape[0])
         #print(target[..., 1:5][obj])
         #print( "target=",target[..., 1:5][obj])
@@ -43,7 +45,9 @@ class Focal_loss(nn.Module):
         #b=target[..., 1:5][obj]
         #print(boxloss)
         #print(boxloss+focal_loss)
-
+        #print(pred_box[..., 1:5][obj].shape)
+        #print(target[..., 0:4][obj])
+        #boxloss = self.l1(pred_box[..., 0:4][obj], target[..., 1:5][obj])
         
         #return boxloss+focal_loss
         return focal_loss + boxloss

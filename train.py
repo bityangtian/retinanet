@@ -7,7 +7,6 @@ from model import Retinanet
 import torch.optim as optim
 from tqdm import tqdm
 from dataset import Retinanetdataset
-import numpy as np
 
 batch_size=2
 

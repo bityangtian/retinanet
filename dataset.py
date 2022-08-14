@@ -56,7 +56,7 @@ class Retinanetdataset(Dataset):
                 feature_s = self.s[feature_idx]
                 i = int(feature_s*x)
                 j = int(feature_s*y)
-                if anchor_iou[idx] >self.iou_thresh:
+                if sort == 0:#sort == 0 说明是iou最大的
                     #print(f"判断成功。。。。。。。。。。。。。。,idx为{idx}")
                     target[feature_idx][scale_idx, i, j, 0] = 1
                     transition = torch.zeros(20)
